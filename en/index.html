@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Support — Schulte Table</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;max-width:760px;margin:40px auto;padding:0 16px;color:#111}
+    header{margin-bottom:18px}
+    nav{margin-bottom:20px;font-size:90%}
+    nav a{margin-right:10px;color:#007bff;text-decoration:none}
+    nav a:hover{text-decoration:underline}
+    form{display:grid;gap:10px}
+    label{font-weight:600}
+    input[type="text"],input[type="email"],textarea{width:100%;padding:8px;border:1px solid #ddd;border-radius:6px}
+    button{background:#007bff;color:#fff;padding:10px;border:0;border-radius:6px;cursor:pointer}
+    .note{font-size:90%;color:#555}
+    .success{color:green;margin-top:12px}
+    .error{color:#a00;margin-top:12px}
+    .small{font-size:85%}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Support — Schulte Table</h1>
+    <p class="note">Have questions, bugs, or suggestions? Fill out the form below. Email is hidden to prevent spam; you can reveal it manually.</p>
+  </header>
+
+  <nav>
+    <a href="/ru/index.html">Русский</a> |
+    <a href="/en/index.html">English</a>
+  </nav>
+
+  <section>
+    <form id="support-form" action="https://formspree.io/f/mrbygngd" method="POST" novalidate>
+      <label for="name">Name</label>
+      <input id="name" name="name" type="text" required />
+
+      <label for="email">Email</label>
+      <input id="email" name="_replyto" type="email" required />
+
+      <label for="subject">Subject</label>
+      <input id="subject" name="subject" type="text" required />
+
+      <label for="message">Message</label>
+      <textarea id="message" name="message" rows="6" required></textarea>
+
+      <!-- Honeypot -->
+      <div style="display:none">
+        <label>Leave this empty</label>
+        <input name="hidden_field" type="text" autocomplete="off" />
+      </div>
+
+      <input type="hidden" name="_subject" value="Support request — Schulte Table" />
+      <button id="submit-btn" type="submit">Send</button>
+      <div id="form-feedback" role="status" aria-live="polite"></div>
+    </form>
+
+    <p class="note small" style="margin-top:14px;">
+      Or show email: <strong id="contact-action" style="cursor:pointer;color:#007bff;text-decoration:underline">Show address</strong>
+      <span id="contact-email" style="margin-left:8px"></span>
+    </p>
+  </section>
+
+  <script>
+    (function(){
+      const REAL_USER = 'alexandrivantsov.ios';
+      const REAL_DOMAIN = 'gmail.com';
+      const RATE_LIMIT_MS = 5000;
+      const FORM = document.getElementById('support-form');
+      const BTN = document.getElementById('submit-btn');
+      const FEEDBACK = document.getElementById('form-feedback');
+      const ACTION = document.getElementById('contact-action');
+      const EMAIL_SPAN = document.getElementById('contact-email');
+      let lastSubmit = 0;
+
+      ACTION.addEventListener('click', function(){
+        const addr = REAL_USER + '@' + REAL_DOMAIN;
+        EMAIL_SPAN.innerHTML = '<a href="mailto:' + addr + '">' + addr + '</a>';
+        try { navigator.clipboard && navigator.clipboard.writeText(addr); } catch(e){}
+        ACTION.style.display = 'none';
+      });
+
+      FORM.addEventListener('submit', function(event){
+        event.preventDefault();
+        const now = Date.now();
+        if (now - lastSubmit < RATE_LIMIT_MS) {
+          FEEDBACK.className = 'error';
+          FEEDBACK.textContent = 'Please wait a few seconds before sending again.';
+          return;
+        }
+        lastSubmit = now;
+        BTN.disabled = true;
+        BTN.textContent = 'Sending...';
+        const formData = new FormData(FORM);
+        if (formData.get('hidden_field')) {
+          FEEDBACK.className = 'error';
+          FEEDBACK.textContent = 'Submission error.';
+          BTN.disabled = false;
+          BTN.textContent = 'Send';
+          return;
+        }
+        fetch(FORM.action, {
+          method: 'POST',
+          body: formData,
+          headers: { 'Accept': 'application/json' }
+        }).then(function(response){
+          BTN.disabled = false;
+          BTN.textContent = 'Send';
+          if (response.ok) {
+            FORM.reset();
+            FEEDBACK.className = 'success';
+            FEEDBACK.textContent = 'Thank you — your message has been sent.';
+          } else {
+            return response.json().then(function(data){
+              FEEDBACK.className = 'error';
+              FEEDBACK.textContent = (data && data.error) ? data.error : 'Error sending — please try again later.';
+            });
+          }
+        }).catch(function(){
+          BTN.disabled = false;
+          BTN.textContent = 'Send';
+          FEEDBACK.className = 'error';
+          FEEDBACK.textContent = 'Network error — check your connection and try again.';
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
