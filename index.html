@@ -1,12 +1,15 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Поддержка — Таблица Шульте</title>
+  <title>Schulte Table Goal — Support</title>
   <style>
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;max-width:760px;margin:40px auto;padding:0 16px;color:#111}
     header{margin-bottom:18px}
+    nav{margin-bottom:20px;font-size:90%}
+    nav a{margin-right:10px;color:#007bff;text-decoration:none}
+    nav a:hover{text-decoration:underline}
     form{display:grid;gap:10px}
     label{font-weight:600}
     input[type="text"],input[type="email"],textarea{width:100%;padding:8px;border:1px solid #ddd;border-radius:6px}
@@ -19,37 +22,36 @@
 </head>
 <body>
   <header>
-    <h1>Поддержка — Таблица Шульте</h1>
-    <p class="note">Есть вопросы, баги или предложения — заполните форму ниже. Email скрыт для защиты от спама; можно показать вручную.</p>
+    <h1>Support — Schulte Table Goal</h1>
+    <p class="note">Have questions, bugs, or suggestions? Fill out the form below. Email is hidden to prevent spam; you can reveal it manually.</p>
   </header>
-
   <section>
     <form id="support-form" action="https://formspree.io/f/mrbygngd" method="POST" novalidate>
-      <label for="name">Имя</label>
+      <label for="name">Name</label>
       <input id="name" name="name" type="text" required />
 
       <label for="email">Email</label>
       <input id="email" name="_replyto" type="email" required />
 
-      <label for="subject">Тема</label>
+      <label for="subject">Subject</label>
       <input id="subject" name="subject" type="text" required />
 
-      <label for="message">Сообщение</label>
+      <label for="message">Message</label>
       <textarea id="message" name="message" rows="6" required></textarea>
 
-      <!-- Honeypot (скрытое поле для ботов) -->
+      <!-- Honeypot -->
       <div style="display:none">
         <label>Leave this empty</label>
         <input name="hidden_field" type="text" autocomplete="off" />
       </div>
 
-      <input type="hidden" name="_subject" value="Support request — Таблица Шульте" />
-      <button id="submit-btn" type="submit">Отправить</button>
+      <input type="hidden" name="_subject" value="Support request — Schulte Table Goal" />
+      <button id="submit-btn" type="submit">Send</button>
       <div id="form-feedback" role="status" aria-live="polite"></div>
     </form>
 
     <p class="note small" style="margin-top:14px;">
-      Или показать email: <strong id="contact-action" style="cursor:pointer;color:#007bff;text-decoration:underline">Показать адрес</strong>
+      Or show email: <strong id="contact-action" style="cursor:pointer;color:#007bff;text-decoration:underline">Show address</strong>
       <span id="contact-email" style="margin-left:8px"></span>
     </p>
   </section>
@@ -66,6 +68,7 @@
       const EMAIL_SPAN = document.getElementById('contact-email');
       let lastSubmit = 0;
 
+      // Reveal email address
       ACTION.addEventListener('click', function(){
         const addr = REAL_USER + '@' + REAL_DOMAIN;
         EMAIL_SPAN.innerHTML = '<a href="mailto:' + addr + '">' + addr + '</a>';
@@ -73,47 +76,64 @@
         ACTION.style.display = 'none';
       });
 
+      // Form submission with extra empty‑field validation
       FORM.addEventListener('submit', function(event){
         event.preventDefault();
+
+        // Rate‑limit check
         const now = Date.now();
         if (now - lastSubmit < RATE_LIMIT_MS) {
           FEEDBACK.className = 'error';
-          FEEDBACK.textContent = 'Подождите несколько секунд перед повторной отправкой.';
+          FEEDBACK.textContent = 'Please wait a few seconds before sending again.';
           return;
         }
-        lastSubmit = now;
-        BTN.disabled = true;
-        BTN.textContent = 'Отправляем...';
+
+        // Basic empty‑field validation (in addition to HTML5 required)
+        const requiredFields = ['name', 'email', 'subject', 'message'];
+        for (const id of requiredFields) {
+          const el = document.getElementById(id);
+          if (!el.value.trim()) {
+            FEEDBACK.className = 'error';
+            FEEDBACK.textContent = `The "${el.previousElementSibling.textContent}" field cannot be empty.`;
+            return;
+          }
+        }
+
+        // Honeypot check
         const formData = new FormData(FORM);
         if (formData.get('hidden_field')) {
           FEEDBACK.className = 'error';
-          FEEDBACK.textContent = 'Ошибка при отправке.';
-          BTN.disabled = false;
-          BTN.textContent = 'Отправить';
+          FEEDBACK.textContent = 'Submission error.';
           return;
         }
+
+        // Proceed with sending
+        lastSubmit = now;
+        BTN.disabled = true;
+        BTN.textContent = 'Sending...';
+
         fetch(FORM.action, {
           method: 'POST',
           body: formData,
           headers: { 'Accept': 'application/json' }
         }).then(function(response){
           BTN.disabled = false;
-          BTN.textContent = 'Отправить';
+          BTN.textContent = 'Send';
           if (response.ok) {
             FORM.reset();
             FEEDBACK.className = 'success';
-            FEEDBACK.textContent = 'Спасибо — ваше сообщение отправлено.';
+            FEEDBACK.textContent = 'Thank you — your message has been sent.';
           } else {
             return response.json().then(function(data){
               FEEDBACK.className = 'error';
-              FEEDBACK.textContent = (data && data.error) ? data.error : 'Ошибка отправки — попробуйте позже.';
+              FEEDBACK.textContent = (data && data.error) ? data.error : 'Error sending — please try again later.';
             });
           }
         }).catch(function(){
           BTN.disabled = false;
-          BTN.textContent = 'Отправить';
+          BTN.textContent = 'Send';
           FEEDBACK.className = 'error';
-          FEEDBACK.textContent = 'Сетевая ошибка — проверьте соединение и попробуйте снова.';
+          FEEDBACK.textContent = 'Network error — check your connection and try again.';
         });
       });
     })();

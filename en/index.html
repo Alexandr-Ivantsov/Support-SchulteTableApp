@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Support — Schulte Table</title>
+  <title>Schulte Table Goal — Support</title>
   <style>
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;max-width:760px;margin:40px auto;padding:0 16px;color:#111}
     header{margin-bottom:18px}
@@ -22,15 +22,9 @@
 </head>
 <body>
   <header>
-    <h1>Support — Schulte Table</h1>
+    <h1>Support — Schulte Table Goal</h1>
     <p class="note">Have questions, bugs, or suggestions? Fill out the form below. Email is hidden to prevent spam; you can reveal it manually.</p>
   </header>
-
-  <nav>
-    <a href="/ru/index.html">Русский</a> |
-    <a href="/en/index.html">English</a>
-  </nav>
-
   <section>
     <form id="support-form" action="https://formspree.io/f/mrbygngd" method="POST" novalidate>
       <label for="name">Name</label>
@@ -51,7 +45,7 @@
         <input name="hidden_field" type="text" autocomplete="off" />
       </div>
 
-      <input type="hidden" name="_subject" value="Support request — Schulte Table" />
+      <input type="hidden" name="_subject" value="Support request — Schulte Table Goal" />
       <button id="submit-btn" type="submit">Send</button>
       <div id="form-feedback" role="status" aria-live="polite"></div>
     </form>
@@ -74,6 +68,7 @@
       const EMAIL_SPAN = document.getElementById('contact-email');
       let lastSubmit = 0;
 
+      // Reveal email address
       ACTION.addEventListener('click', function(){
         const addr = REAL_USER + '@' + REAL_DOMAIN;
         EMAIL_SPAN.innerHTML = '<a href="mailto:' + addr + '">' + addr + '</a>';
@@ -81,25 +76,42 @@
         ACTION.style.display = 'none';
       });
 
+      // Form submission with extra empty‑field validation
       FORM.addEventListener('submit', function(event){
         event.preventDefault();
+
+        // Rate‑limit check
         const now = Date.now();
         if (now - lastSubmit < RATE_LIMIT_MS) {
           FEEDBACK.className = 'error';
           FEEDBACK.textContent = 'Please wait a few seconds before sending again.';
           return;
         }
-        lastSubmit = now;
-        BTN.disabled = true;
-        BTN.textContent = 'Sending...';
+
+        // Basic empty‑field validation (in addition to HTML5 required)
+        const requiredFields = ['name', 'email', 'subject', 'message'];
+        for (const id of requiredFields) {
+          const el = document.getElementById(id);
+          if (!el.value.trim()) {
+            FEEDBACK.className = 'error';
+            FEEDBACK.textContent = `The "${el.previousElementSibling.textContent}" field cannot be empty.`;
+            return;
+          }
+        }
+
+        // Honeypot check
         const formData = new FormData(FORM);
         if (formData.get('hidden_field')) {
           FEEDBACK.className = 'error';
           FEEDBACK.textContent = 'Submission error.';
-          BTN.disabled = false;
-          BTN.textContent = 'Send';
           return;
         }
+
+        // Proceed with sending
+        lastSubmit = now;
+        BTN.disabled = true;
+        BTN.textContent = 'Sending...';
+
         fetch(FORM.action, {
           method: 'POST',
           body: formData,
